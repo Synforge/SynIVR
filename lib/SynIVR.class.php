@@ -1,14 +1,15 @@
 <?php
 
-class Synforge_IVR {
+class SynIVR {
 	
 	private $_config = null;
 	private $_agi = null;
 	
-	const CONFIG_PATH = "/etc/asterisk/phpivr.conf";
+	const CONFIG_PATH = "/etc/asterisk/synivr.conf";
 	
 	//Keeping state of the current user location
 	private $_menu = 'default';
+	private $_history = array();
 	
 	public function __construct($menu = 'default') {
 		$this->_agi = new AGI();
@@ -77,6 +78,17 @@ class Synforge_IVR {
 					$this->_menu = (isset($action['properties']['name'])) ? $action['properties']['name'] : $this->_menu;
 					return true;
 					break;
+				case 'back':
+					$this->_agi->verbose("Action: Back Recieved");
+					if(count($this->_history) > 1) {
+						$this->_agi->verbose(print_r($this->_history, true));
+					
+						//The last will always be the menu that the user is on, so take the second entry.
+						$this->_menu = $this->_history[count($this->_history) - 2];
+						//Remove the last two entries.
+						$this->_history = array_slice($this->_history, 0, count($this->_history) - 2);
+					}
+					return true;
 				case 'transfer':
 					$this->_agi->verbose('Action: Transfer recieved.');
 					$this->_agi->exec('TRANSFER SIP/'.$action['properties']['extension']);
@@ -127,6 +139,9 @@ class Synforge_IVR {
 		}
 	
 		$this->_menu = $menuid;
+		
+		$this->_agi->verbose("Added: {$this->_menu} to the history stack.");
+		$this->_history[] = $this->_menu;
 	
 		$this->_agi->verbose("Loaded menu: {$menuid}");
 
