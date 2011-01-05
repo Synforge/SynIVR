@@ -81,8 +81,6 @@ class SynIVR {
 				case 'back':
 					$this->_agi->verbose("Action: Back Recieved");
 					if(count($this->_history) > 1) {
-						$this->_agi->verbose(print_r($this->_history, true));
-					
 						//The last will always be the menu that the user is on, so take the second entry.
 						$this->_menu = $this->_history[count($this->_history) - 2];
 						//Remove the last two entries.
@@ -108,7 +106,7 @@ class SynIVR {
 							(($delay = $action['properties']['delay']) > 0) ? $delay : 1, 
 							(($length = $action['properties']['length']) > 0) ? $length : 1);
 							
-						if($dtmf['result'] > 0) {
+						if($dtmf['result'] >= 0) {
 							return $this->_inputEvent($dtmf['result']);
 							break;
 						} else {
@@ -118,6 +116,24 @@ class SynIVR {
 						}
 					}
 					break;
+				case 'input':
+					$this->_agi->verbose('Action: Input');
+					for($i = 0; $i < $action['properties']['loop']; $i++) {
+						$dtmf = $this->_agi->get_data(
+							$action['properties']['source'], 
+							(($delay = $action['properties']['delay']) > 0) ? $delay : 1, 
+							(($length = $action['properties']['length']) > 0) ? $length : 1);
+							
+						if($dtmf['result'] >= 0) {
+							$params = str_replace('${INPUT}', $dtmf['result'], $action['properties']['params']);
+							return $this->_agi->exec($action['properties']['application'], $params);
+							break;
+						} else {
+							if($dtmf['data'] != 'timeout') {
+								throw new Exception("Invalid return data from get_data, caller most likely hung up.");
+							}
+						}
+					}
 				default:
 					$this->_agi->verbose('Unknown Action: Attempting to run as Asterisk Application');
 					$this->_agi->exec($action['action'], $action['properties']);
