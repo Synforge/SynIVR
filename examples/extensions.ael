@@ -1,0 +1,8 @@
+1234 => {
+	Answer();
+	Ringing();
+        Wait(1);
+        AGI(SynIVR, ivr/default.conf, default);
+        Hangup();
+}
+

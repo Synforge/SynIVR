@@ -1,1 +1,121 @@
-TODO: Add README!
+Project: SynIVR - An IVR AGI application for Asterisk
+
+DESCRIPTION
+===============================================================================
+
+SynIVR provides a full featured IVR system for Asterisk, inspired by
+the phpIVR project it includes the following features:
+
+    - Unlimited menus that can be nested in any way.
+
+    - Ability to navigate between menus at any point.
+
+    - Can perform a set of actions (play prompt, play music, navigate 
+      between menus, etc.) when the user enters a menu, presses a button
+      or a combination of buttons.
+
+    - Dynamic input that can be passed to asterisk applications, for        
+      example: providing a menu where a user can specify an extension.
+
+    - Keeps track of which menus have been accessed by the user. 
+      Includes back action to return to the previous menu.
+    
+    - Menus can be separated into multiple configuration files.
+
+    - Any asterisk application can be called from the IVR.
+
+REQUIREMENTS
+===============================================================================
+
+    - PHP version 5.2 or greater
+
+INSTALLATION
+===============================================================================
+
+Move the synivr directory to your asterisk agi-bin directory         
+    mv synivr /var/lib/asterisk/agi-bin/
+
+Ensure Bootstrap.php is executable
+    chmod +x /var/lib/asterisk/agi-bin/synivr/Bootstrap.php
+
+Create a symlink to Bootstrap.php in the agi-bin directory 
+    ln -s /var/lib/asterisk/agi-bin/synivr/Bootstrap.php SynIVR
+
+Ensure files are readable by the asterisk server.
+    chown asterisk:asterisk /var/lib/asterisk/agi-bin/synivr -R
+
+    
+CONFIGURATION
+===============================================================================
+
+Sample configurations can be found within the synivr directory, a list of
+available actions are listed below:
+
+Menu
+----
+Available properties:
+name: specifies which menu to navigate to.
+
+Description:
+Moves to a new menu, you may specify the same menu as the one you're calling
+it from to repeat the entry actions of that menu.
+
+Back
+----
+Description:
+Moves back one step in the user history, if there is no previous menu the
+current menu will be repeated.
+
+Exit
+----
+Description:
+Exits the IVR system.
+
+Prompt
+------
+Available properties:
+source: The audio file to play to the user
+delay: How long to wait (ms) after the audio has completed
+loop: Specifies how many times to loop the prompt sound
+length: How many digits to accept as input
+
+Description:
+Prompts the user with an audio file, may be repeated a number of times and
+a delay to specify how long it should wait for input after completion. Once
+input of a specified length is provided the relevant input action will be
+executed.
+
+Note: Audio file base directory is /var/lib/asterisk/sounds/
+
+Input
+-----
+Available properties:
+source: The audio file to play to the user
+delay: How long to wait (ms) after the audio has completed
+loop: Specifies how many times to loop the prompt sound
+length: How many digits to accept as input
+application: Asterisk application to run
+params: Parameters to be passed to the application
+
+Description:
+Similar to prompt, input will play audio and wait for the user to input
+digits up to the specified length. Once digits have been entered the 
+application specified will be executed and params passed as arguments,
+the variable ${INPUT} can be used in params which will be replaced with
+the users input.
+
+Note Audio file base directory is /var/lib/asterisk/sounds/
+
+Application
+-----------
+Available properties:
+application: Asterisk application to run
+params: Parameters to be passed to the application
+
+Description:
+Will run an asterisk application passing the params as an argument.
+
+AUTHORS
+===============================================================================
+
+Paul Oyston - paul@synforge.com

@@ -2,24 +2,34 @@
 
 class SynIVR {
 	
+	const ASTERISK_CONFIG_DIR = '/etc/asterisk/';
+	
+	private $_config_path = null;
 	private $_config = null;
 	private $_agi = null;
-	
-	const CONFIG_PATH = "/etc/asterisk/synivr.conf";
 	
 	//Keeping state of the current user location
 	private $_menu = 'default';
 	private $_history = array();
 	
-	public function __construct($menu = 'default') {
+	public function __construct($config = 'synivr.conf', $menu = 'default') {
 		$this->_agi = new AGI();
+		
 		$this->_menu = $menu;
+		
+		if($config[0] == '/') {
+			$this->_config_path = trim($config);
+		} else {
+			$this->_config_path = self::ASTERISK_CONFIG_DIR . trim($config);
+		}
 	}
 	
 	protected function _getConfig($menu = null) {
 		if(is_null($this->_config)) {	
 			//Load the config from the config path
-			$config_file = file_get_contents(self::CONFIG_PATH);
+			$config_file = file_get_contents($this->_config_path);
+		
+			$this->_agi->verbose($this->_config_path);
 		
 			//JSON Decode the config file.
 			$this->_config = json_decode($config_file, true);
@@ -72,7 +82,7 @@ class SynIVR {
 		$actions = (isset($actions['action'])) ? array($actions) : $actions;
 		
 		foreach($actions as $action) {
-			switch($action['action']) {
+			switch(strtolower($action['action'])) {
 				case 'menu':
 					$this->_agi->verbose("Action: Menu recieved ({$action['properties']['name']})");
 					$this->_menu = (isset($action['properties']['name'])) ? $action['properties']['name'] : $this->_menu;
@@ -87,14 +97,6 @@ class SynIVR {
 						$this->_history = array_slice($this->_history, 0, count($this->_history) - 2);
 					}
 					return true;
-				case 'transfer':
-					$this->_agi->verbose('Action: Transfer recieved.');
-					$this->_agi->exec('TRANSFER SIP/'.$action['properties']['extension']);
-					break;
-				case 'hangup':
-					$this->_agi->verbose('Action: Hangup recieved.');
-					$this->_agi->hangup();
-					break;
 				case 'exit':
 					$this->_agi->verbose('Action: Exit.');
 					break;
@@ -134,15 +136,19 @@ class SynIVR {
 							}
 						}
 					}
+				case 'application':
+					$this->_agi->verbose('Action: Application');
+					$this->_agi->exec($action['properties']['application'], $action['properties']['params']);
+					break;
 				default:
-					$this->_agi->verbose('Unknown Action: Attempting to run as Asterisk Application');
-					$this->_agi->exec($action['action'], $action['properties']);
+					$this->_agi->verbose('Invalid Action: ' . $action['action']);
+					return false;
 			}
 		}
 		
 		return false;
 	}
-		
+	
 	public function runMenu($menuid){
 		if (!$menuid) {
 			throw new Exception('No menu name provided');
